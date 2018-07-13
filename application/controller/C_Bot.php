@@ -71,7 +71,7 @@ class C_Bot
                                     $first_name = $user_id;
                                 }
                                 echo $first_name. "\n";
-                                $chat = $MadelineProto->messages->createChat(['users' => [$user_id], 'title' => $first_name."_support", ]);
+                                $chat = $MadelineProto->messages->createChat(['users' => [$user_id], 'title' => $first_name."_KeyProxy_Support", ]);
                             }
                             catch (Exception $e)
                             {
