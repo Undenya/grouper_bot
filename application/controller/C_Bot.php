@@ -22,7 +22,8 @@ class C_Bot
     {
         echo 'Bot started.' . PHP_EOL;
         $offset = 0;
-
+        $my_bot = $MadelineProto->get_self();
+        $my_id = $my_bot["id"];
         while (true) {
             $updates = $MadelineProto->get_updates(['offset' => $offset, 'limit' => 3, 'timeout' => 1]); // Just like in the bot API, you can specify an offset, a limit and a timeout
             foreach ($updates as $update) {
@@ -30,8 +31,15 @@ class C_Bot
                 //Parse $update['update'], that is an object of type Update
 
                 if (isset($update['update']['message']['from_id'])) {
+                    $db = new MysqliDb("localhost", "users_bot", "6AVwnhiJqnwnD4fg", "users_db",
+                        3306, "utf8mb4");
+
                     echo "User_ID: " . $update['update']['message']['from_id'] . "\n";
                     $user_id = $update['update']['message']['from_id'];
+                    if($user_id == $my_id)
+                    {
+                        continue;
+                    }
 
                     if(isset($update['update']['message']["id"])) {
                         echo "Message_ID: ".$update['update']['message']["id"] . "\n";
@@ -39,25 +47,37 @@ class C_Bot
                     }
 
                     if(isset($update['update']['message']["message"])) {
-                        echo "Message: ".$update['update']['message']["message"] . "\n";
                         $user_message = $update['update']['message']["message"];
+                        echo "Message: ".$user_message . "\n";
+
+                    }
+                    else
+                    {
+                        $data_update = ["chat_id" => null];
+                        $db->where("user_id", $user_id);
+                        $db->update("users", $data_update);
+                        continue;
                     }
 
-//                        $dialogs = $MadelineProto->get_dialogs();
-//                        var_dump($dialogs);
-                        $db = new MysqliDb("localhost", "users_bot", "6AVwnhiJqnwnD4fg", "users_db",
-                            3306, "utf8mb4");
-                        $db->where("user_id", $user_id);
-                        $users = $db->getOne("users");
-                        if($users != null)
+
+                    $db->where("user_id", $user_id);
+                    $users = $db->getOne("users");
+                    if($users != null && $users["chat_id"] != null)
+                    {
+                        try
                         {
-//                            $MadelineProto->messages->forwardMessages(['from_peer' => $user_id,
-//                                'id' => [$message_id], 'to_peer' => "chat#".$users["chat_id"], ]);
-//                            $MadelineProto->messages->sendMessage(['peer' => "chat#".$users["chat_id"], 'message' => $user_message,
-//                                'parse_mode' => 'markdown', ]);
-                            continue;
+                            $MadelineProto->messages->forwardMessages(['from_peer' => $user_id,
+                                'id' => [$message_id], 'to_peer' => "chat#".$users["chat_id"], ]);
                         }
-                        else
+                        catch (Exception $e)
+                        {
+                            echo $e->getMessage();
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        if($users["chat_id"] == null)
                         {
                             try
                             {
@@ -77,45 +97,39 @@ class C_Bot
                             {
                                 echo $e->getMessage();
                             }
-
-                            $data["user_id"] = $user_id;
-
-                            if(isset($chat["chats"][0]["id"]))
-                            {
-                                if($users["chat_id"] == null)
-                                {
-                                    try
-                                    {
-                                        $MadelineProto->messages->forwardMessages(['from_peer' => $user_id,
-                                            'id' => [$message_id], 'to_peer' => "chat#".$chat["chats"][0]["id"], ]);
-                                    }
-                                    catch (Exception $e)
-                                    {
-                                        echo $e->getMessage();
-                                    }
-
-                                }
-                                $data["chat_id"] = $chat["chats"][0]["id"];
-                            }
-
-                            $db->insert("users", $data);
-
-
-
-//                            $MadelineProto->messages->sendMessage(['peer' => "chat#".$users["chat_id"], 'message' => $user_message,
-//                                'parse_mode' => 'markdown', ]);
                         }
-//                        if(in_array($user_id, $dialogs))
-//                        {
-//                            continue;
-//                        }
-//                        else
-//                        {
-//                            $chat = $MadelineProto->messages->createChat(['users' => [$user_id], 'title' => 'user_'.$user_id, ]);
-//                            //var_dump($chat_id);
-//                        }
+
+                        $data["user_id"] = $user_id;
+
+                        if(isset($chat["chats"][0]["id"]))
+                        {
+                            if($users["chat_id"] == null)
+                            {
+                                try
+                                {
+                                    $MadelineProto->messages->forwardMessages(['from_peer' => $user_id,
+                                        'id' => [$message_id], 'to_peer' => "chat#".$chat["chats"][0]["id"], ]);
+                                }
+                                catch (Exception $e)
+                                {
+                                    echo $e->getMessage();
+                                }
+
+                            }
+                            $data["chat_id"] = $chat["chats"][0]["id"];
+                        }
+
+                        if($users["user_id"] == null)
+                        {
+                            $db->insert("users", $data);
+                        }
+                        else
+                        {
+                            $db->where("user_id", $users["user_id"]);
+                            $db->update("users", $data);
+                        }
+                    }
                 }
-                //var_dump($update);
             }
         }
     }
