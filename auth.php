@@ -23,13 +23,15 @@ if (!file_exists('madeline.php')) {
 }
 include 'madeline.php';
 
+exec("rm -rf session.madeline");
+
 $settings = [
     'logger' => ['logger_level' => \danog\MadelineProto\Logger::ERROR],
     'peer' => ['full_fetch' => false, 'cache_all_peers_on_startup' => false],
     'updates' => ['handle_old_updates' => false],
 ];
-$MadelineProto = new \danog\MadelineProto\API('session.madeline3', $settings);
-$MadelineProto->logout();
+$MadelineProto = new \danog\MadelineProto\API('session.madeline', $settings);
+//$MadelineProto->logout();
 //$MadelineProto->session = __DIR__.'/session.madeline2';
 //$MadelineProto->settings['logger']['logger_level'] =  \danog\MadelineProto\Logger::ERROR;
 //$MadelineProto->settings['peer']['full_fetch'] = false;
