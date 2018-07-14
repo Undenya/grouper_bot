@@ -31,6 +31,7 @@ class C_Bot
                 //Parse $update['update'], that is an object of type Update
 
                 if (isset($update['update']['message']['from_id'])) {
+                    //var_dump($update);
                     $db = new MysqliDb("localhost", "users_bot", "6AVwnhiJqnwnD4fg", "users_db",
                         3306, "utf8mb4");
 
@@ -66,8 +67,11 @@ class C_Bot
                     {
                         try
                         {
-                            $MadelineProto->messages->forwardMessages(['from_peer' => $user_id,
-                                'id' => [$message_id], 'to_peer' => "chat#".$users["chat_id"], ]);
+                            if(!isset($update["update"]["message"]["to_id"]["chat_id"]))
+                            {
+                                $MadelineProto->messages->forwardMessages(['from_peer' => $user_id,
+                                    'id' => [$message_id], 'to_peer' => "chat#".$users["chat_id"], ]);
+                            }
                         }
                         catch (Exception $e)
                         {
